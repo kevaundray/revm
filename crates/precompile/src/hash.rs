@@ -23,7 +23,8 @@ pub fn sha256_run(input: &[u8], gas_limit: u64) -> PrecompileResult {
     if cost > gas_limit {
         Err(PrecompileError::OutOfGas)
     } else {
-        let output = sha2::Sha256::digest(input);
+        let provider = crate::get_crypto_provider();
+        let output = provider.sha256(input);
         Ok(PrecompileOutput::new(cost, output.to_vec().into()))
     }
 }
@@ -39,11 +40,11 @@ pub fn ripemd160_run(input: &[u8], gas_limit: u64) -> PrecompileResult {
     if gas_used > gas_limit {
         Err(PrecompileError::OutOfGas)
     } else {
-        let mut hasher = ripemd::Ripemd160::new();
-        hasher.update(input);
-
+        let provider = crate::get_crypto_provider();
+        let hash = provider.ripemd160(input);
+        
         let mut output = [0u8; 32];
-        hasher.finalize_into((&mut output[12..]).into());
+        output[12..].copy_from_slice(&hash);
         Ok(PrecompileOutput::new(gas_used, output.to_vec().into()))
     }
 }

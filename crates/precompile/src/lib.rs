@@ -13,6 +13,7 @@ pub mod bls12_381;
 pub mod bls12_381_const;
 pub mod bls12_381_utils;
 pub mod bn128;
+pub mod crypto_provider;
 pub mod hash;
 pub mod identity;
 pub mod interface;
@@ -24,6 +25,10 @@ pub mod secp256r1;
 pub mod utilities;
 
 pub use interface::*;
+pub use crypto_provider::{
+    CryptoProvider, CryptoProviderAlreadySetError, DefaultCryptoProvider,
+    install_crypto_provider, get_crypto_provider,
+};
 
 // silence arkworks lint as bn impl will be used as default if both are enabled.
 cfg_if::cfg_if! {

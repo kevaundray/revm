@@ -48,7 +48,8 @@ pub fn ec_recover_run(input: &[u8], gas_limit: u64) -> PrecompileResult {
     let recid = input[63] - 27;
     let sig = <&B512>::try_from(&input[64..128]).unwrap();
 
-    let res = ecrecover(sig, recid, msg);
+    let provider = crate::get_crypto_provider();
+    let res = provider.ecrecover(sig, recid, msg);
 
     let out = res.map(|o| o.to_vec().into()).unwrap_or_default();
     Ok(PrecompileOutput::new(ECRECOVER_BASE, out))

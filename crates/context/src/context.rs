@@ -383,6 +383,78 @@ where
         self
     }
 
+    /// Sets a custom crypto provider for the EVM and returns self for chaining.
+    ///
+    /// This method installs a custom crypto provider that will be used by all
+    /// precompiles for cryptographic operations. Note that the crypto provider
+    /// is global state, so this affects all subsequent EVM instances.
+    ///
+    /// # Arguments
+    /// * `provider` - The crypto provider to install
+    ///
+    /// # Returns
+    /// * `Ok(self)` if the provider was installed successfully
+    /// * `Err(CryptoProviderAlreadySetError)` if a provider was already set
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use context::Context;
+    /// use revm_precompile::CryptoProvider;
+    /// 
+    /// struct CustomCryptoProvider;
+    /// impl CryptoProvider for CustomCryptoProvider {
+    ///     // implement required methods...
+    /// }
+    /// 
+    /// // Set custom crypto provider and build EVM in a chain
+    /// let evm = Context::mainnet()
+    ///     .with_crypto_provider(Box::new(CustomCryptoProvider))?
+    ///     .build_mainnet();
+    /// ```
+    pub fn with_crypto_provider(
+        self,
+        provider: Box<dyn revm_precompile::CryptoProvider>,
+    ) -> Result<Self, revm_precompile::CryptoProviderAlreadySetError> {
+        revm_precompile::install_crypto_provider(provider)?;
+        Ok(self)
+    }
+
+    /// Sets a custom crypto provider for the EVM.
+    ///
+    /// This method installs a custom crypto provider that will be used by all
+    /// precompiles for cryptographic operations. It should be called before
+    /// building the EVM.
+    ///
+    /// # Arguments
+    /// * `provider` - The crypto provider to install
+    ///
+    /// # Returns
+    /// * `Ok(())` if the provider was installed successfully
+    /// * `Err(CryptoProviderAlreadySetError)` if a provider was already set
+    ///
+    /// # Example
+    /// ```rust,ignore
+    /// use context::Context;
+    /// use revm_precompile::CryptoProvider;
+    /// 
+    /// struct CustomCryptoProvider;
+    /// impl CryptoProvider for CustomCryptoProvider {
+    ///     // implement required methods...
+    /// }
+    /// 
+    /// // Set custom crypto provider before building EVM
+    /// Context::install_crypto_provider(Box::new(CustomCryptoProvider))?;
+    /// 
+    /// // Now build the EVM as usual
+    /// let ctx = Context::mainnet();
+    /// let evm = ctx.build_mainnet();
+    /// ```
+    pub fn install_crypto_provider(
+        provider: Box<dyn revm_precompile::CryptoProvider>,
+    ) -> Result<(), revm_precompile::CryptoProviderAlreadySetError> {
+        revm_precompile::install_crypto_provider(provider)
+    }
+
     /// Modifies the context block.
     pub fn modify_block<F>(&mut self, f: F)
     where

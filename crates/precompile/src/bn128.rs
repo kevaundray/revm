@@ -162,11 +162,14 @@ pub fn run_add(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult 
 
     let input = right_pad::<ADD_INPUT_LEN>(input);
 
-    let p1 = read_g1_point(&input[..G1_LEN])?;
-    let p2 = read_g1_point(&input[G1_LEN..])?;
-    let result = g1_point_add(p1, p2);
-
-    let output = encode_g1_point(result);
+    let p1_bytes: [u8; 64] = input[..G1_LEN].try_into().unwrap();
+    let p2_bytes: [u8; 64] = input[G1_LEN..].try_into().unwrap();
+    
+    let provider = crate::get_crypto_provider();
+    let result = provider.bn128_add(&p1_bytes, &p2_bytes)
+        .ok_or(PrecompileError::Bn128AffineGFailedToCreate)?;
+    
+    let output = result;
 
     Ok(PrecompileOutput::new(gas_cost, output.into()))
 }
@@ -179,12 +182,14 @@ pub fn run_mul(input: &[u8], gas_cost: u64, gas_limit: u64) -> PrecompileResult 
 
     let input = right_pad::<MUL_INPUT_LEN>(input);
 
-    let p = read_g1_point(&input[..G1_LEN])?;
-
-    let scalar = read_scalar(&input[G1_LEN..G1_LEN + SCALAR_LEN]);
-    let result = g1_point_mul(p, scalar);
-
-    let output = encode_g1_point(result);
+    let p_bytes: [u8; 64] = input[..G1_LEN].try_into().unwrap();
+    let scalar_bytes: [u8; 32] = input[G1_LEN..G1_LEN + SCALAR_LEN].try_into().unwrap();
+    
+    let provider = crate::get_crypto_provider();
+    let result = provider.bn128_mul(&p_bytes, &scalar_bytes)
+        .ok_or(PrecompileError::Bn128AffineGFailedToCreate)?;
+    
+    let output = result;
 
     Ok(PrecompileOutput::new(gas_cost, output.into()))
 }
@@ -232,16 +237,20 @@ pub fn run_pair(
         let g1_is_zero = encoded_g1_element.iter().all(|i| *i == 0);
         let g2_is_zero = encoded_g2_element.iter().all(|i| *i == 0);
 
-        // Get G1 and G2 points from the input
-        let a = read_g1_point(encoded_g1_element)?;
-        let b = read_g2_point(encoded_g2_element)?;
+        // Validate points by trying to read them (this maintains validation)
+        let _a = read_g1_point(encoded_g1_element)?;
+        let _b = read_g2_point(encoded_g2_element)?;
 
         if !g1_is_zero && !g2_is_zero {
-            points.push((a, b));
+            let g1_bytes: [u8; 64] = encoded_g1_element.try_into().unwrap();
+            let g2_bytes: [u8; 128] = encoded_g2_element.try_into().unwrap();
+            points.push((g1_bytes, g2_bytes));
         }
     }
 
-    let success = pairing_check(&points);
+    let provider = crate::get_crypto_provider();
+    let success = provider.bn128_pairing(&points)
+        .unwrap_or(false);
 
     Ok(PrecompileOutput::new(gas_used, bool_to_bytes32(success)))
 }

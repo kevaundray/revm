@@ -59,7 +59,8 @@ pub fn run(input: &[u8], gas_limit: u64) -> PrecompileResult {
     let z = as_bytes32(&input[32..64]);
     let y = as_bytes32(&input[64..96]);
     let proof = as_bytes48(&input[144..192]);
-    if !verify_kzg_proof(commitment, z, y, proof) {
+    let provider = crate::get_crypto_provider();
+    if !provider.verify_kzg_proof(commitment, z, y, proof) {
         return Err(PrecompileError::BlobVerifyKzgProofFailed);
     }
 

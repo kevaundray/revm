@@ -40,7 +40,20 @@ pub fn p256_verify(input: &[u8], gas_limit: u64) -> PrecompileResult {
     if P256VERIFY_BASE_GAS_FEE > gas_limit {
         return Err(PrecompileError::OutOfGas);
     }
-    let result = if verify_impl(input).is_some() {
+    if input.len() != 160 {
+        return Ok(PrecompileOutput::new(P256VERIFY_BASE_GAS_FEE, Bytes::new()));
+    }
+    
+    let provider = crate::get_crypto_provider();
+    
+    // Extract the components from input
+    let message_hash: &[u8; 32] = &input[..32].try_into().unwrap();
+    let r: &[u8; 32] = &input[32..64].try_into().unwrap();
+    let s: &[u8; 32] = &input[64..96].try_into().unwrap();
+    let public_key_x: &[u8; 32] = &input[96..128].try_into().unwrap();
+    let public_key_y: &[u8; 32] = &input[128..160].try_into().unwrap();
+    
+    let result = if provider.secp256r1_verify(message_hash, r, s, public_key_x, public_key_y) {
         B256::with_last_byte(1).into()
     } else {
         Bytes::new()

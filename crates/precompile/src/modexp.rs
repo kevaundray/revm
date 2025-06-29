@@ -157,8 +157,11 @@ where
     let (exponent, modulus) = input.split_at(exp_len);
     debug_assert_eq!(modulus.len(), mod_len);
 
-    // Call the modexp.
-    let output = modexp(base, exponent, modulus);
+    // Call the modexp through the crypto provider.
+    let provider = crate::get_crypto_provider();
+    let data = [base, exponent, modulus].concat();
+    let output = provider.modexp(base_len, exp_len, mod_len, &data)
+        .unwrap_or_else(|| modexp(base, exponent, modulus).into());
 
     // Left pad the result to modulus length. bytes will always by less or equal to modulus length.
     Ok(PrecompileOutput::new(

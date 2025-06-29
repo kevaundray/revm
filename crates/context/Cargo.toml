@@ -23,6 +23,7 @@ primitives.workspace = true
 database-interface.workspace = true
 state.workspace = true
 bytecode.workspace = true
+revm-precompile = { path = "../precompile", default-features = false }
 
 # misc
 derive-where.workspace = true
@@ -44,6 +45,7 @@ std = [
 	"database-interface/std",
 	"primitives/std",
 	"state/std",
+	"revm-precompile/std",
 ]
 serde = [
 	"dep:serde",

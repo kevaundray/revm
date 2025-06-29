@@ -42,7 +42,8 @@ pub fn run(input: &[u8], gas_limit: u64) -> PrecompileResult {
         u64::from_le_bytes(input[204..204 + 8].try_into().unwrap()),
     ];
 
-    algo::compress(rounds, &mut h, m, t, f);
+    let provider = crate::get_crypto_provider();
+    h = provider.blake2f(rounds as u32, h, m, t, f);
 
     let mut out = [0u8; 64];
     for (i, h) in (0..64).step_by(8).zip(h.iter()) {
